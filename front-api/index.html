@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+    <h2>Listagem de Produtos</h2>
+
+    <ul id="products-list"></ul>
+
+    <hr>
+
+    <h2>Cadastro de Produtos</h2>
+    <form id="form">
+        <div>
+            <label>Nome</label>
+            <input type="text" name="name">
+        </div>
+        <div>
+            <label>Marca</label>
+            <input type="text" name="brand">
+        </div>
+        <div>
+            <label>Preço</label>
+            <input type="text" name="price">
+        </div>
+        <div>
+            <button type="submit">Cadastrar</button>
+        </div>
+    </form>
+
+    <script>
+        const API_URL = 'http://localhost:8080/api/products'
+        const form = document.querySelector('#form')
+        const productsList = document.querySelector('#products-list')
+
+        // OBTEM A LISTA DE PRODUTOS
+        function obterLista() {
+            fetch(API_URL).then(response => {
+                response.json().then(data => {
+
+                    const productHtml = data.map(product => `
+                        <li>
+                            ${product.name} - ${product.brand} - ${product.price}
+                            <a href="#" class="botao-excluir" data-id="${product._id}">[excluir]</a>
+                            <a href="#" class="botao-editar" data-id="${product._id}">[editar]</a>
+                        </li>
+                    `).join('')
+
+                    productsList.innerHTML = productHtml
+
+                    const botoesExcluir = document.querySelectorAll('.botao-excluir')
+                    botoesExcluir.forEach(botao => {
+                        botao.onclick = function (e) {
+                            e.preventDefault()
+
+                            const id = this.dataset.id
+
+                            fetch(`${API_URL}/${id}`, {
+                                method: 'DELETE',
+                            }).then(response => {
+                                response.json().then(data => {
+                                    if (data.message === 'success') {
+                                        obterLista()
+                                        alert('Produto excluído com sucesso!')
+                                    } else {
+                                        alert('Erro ao excluir produto, tente novamente mais tarde.')
+                                    }
+                                })
+                            })
+                        }
+                    })
+                })
+            })
+        }
+
+        obterLista()
+
+        // AO CADASTRAR UM PRODUTO
+        form.onsubmit = function (e) {
+            e.preventDefault()
+
+            const name = document.forms['form'].name.value
+            const brand = document.forms['form'].brand.value
+            const price = document.forms['form'].price.value
+
+            fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name,
+                    brand,
+                    price,
+                })
+            }).then(response => {
+                response.json().then(data => {
+                    if (data.message === 'success') {
+                        form.reset()
+                        obterLista()
+                        alert('Cadastro realizado com sucesso')
+                    } else {
+                        alert('Ops, ocorreu um erro. Tente novamente mais tarde')
+                    }
+                })
+            })
+        }
+    </script>
+</body>
+
+</html>
