@@ -8,6 +8,12 @@
     <title>Document</title>
 </head>
 
+<style>
+    .hidden {
+        display: none;
+    }
+</style>
+
 <body>
 
     <h2>Listagem de Produtos</h2>
@@ -35,10 +41,84 @@
         </div>
     </form>
 
+    <div id="edit" class="hidden">
+        <hr>
+        <h2>Editar Produto</h2>
+        <form id="formEdit">
+            <input type="hidden" name="id">
+            <div>
+                <label>Nome</label>
+                <input type="text" name="name">
+            </div>
+            <div>
+                <label>Marca</label>
+                <input type="text" name="brand">
+            </div>
+            <div>
+                <label>Preço</label>
+                <input type="text" name="price">
+            </div>
+            <div>
+                <button type="submit">Alterar</button>
+            </div>
+        </form>
+    </div>
+
     <script>
         const API_URL = 'http://localhost:8080/api/products'
+
+        const edit = document.querySelector('#edit')
         const form = document.querySelector('#form')
+        const formEdit = document.querySelector('#formEdit')
         const productsList = document.querySelector('#products-list')
+
+        // ADICIONA EVENTO DE CLICK NO BOTAO EXCLUIR
+        function adicionaEventoBotaoExcluir() {
+            const botoesExcluir = document.querySelectorAll('.botao-excluir')
+            botoesExcluir.forEach(botao => {
+                botao.onclick = function (e) {
+                    e.preventDefault()
+
+                    const id = this.dataset.id
+
+                    fetch(`${API_URL}/${id}`, {
+                        method: 'DELETE',
+                    }).then(response => {
+                        response.json().then(data => {
+                            if (data.message === 'success') {
+                                obterLista()
+                                alert('Produto excluído com sucesso!')
+                            } else {
+                                alert('Erro ao excluir produto, tente novamente mais tarde.')
+                            }
+                        })
+                    })
+                }
+            })
+        }
+
+        // ADICIONA EVENTO DE CLICK NO BOTAO EDITAR
+        function adicionaEventoBotaoEditar() {
+            const botoesEditar = document.querySelectorAll('.botao-editar')
+            botoesEditar.forEach(botao => {
+                botao.onclick = function (e) {
+                    e.preventDefault()
+
+                    edit.classList.remove('hidden')
+
+                    const id = this.dataset.id
+                    const name = this.dataset.name
+                    const brand = this.dataset.brand
+                    const price = this.dataset.price
+
+                    document.forms['formEdit'].id.value = id
+                    document.forms['formEdit'].name.value = name
+                    document.forms['formEdit'].brand.value = brand
+                    document.forms['formEdit'].price.value =price
+
+                }
+            })
+        }
 
         // OBTEM A LISTA DE PRODUTOS
         function obterLista() {
@@ -48,34 +128,24 @@
                     const productHtml = data.map(product => `
                         <li>
                             ${product.name} - ${product.brand} - ${product.price}
+                            <a 
+                                href="#" 
+                                class="botao-editar" 
+                                data-id="${product._id}"
+                                data-name="${product.name}"
+                                data-brand="${product.brand}"
+                                data-price="${product.price}"
+                            >
+                                [editar]
+                            </a>
                             <a href="#" class="botao-excluir" data-id="${product._id}">[excluir]</a>
-                            <a href="#" class="botao-editar" data-id="${product._id}">[editar]</a>
                         </li>
                     `).join('')
 
                     productsList.innerHTML = productHtml
 
-                    const botoesExcluir = document.querySelectorAll('.botao-excluir')
-                    botoesExcluir.forEach(botao => {
-                        botao.onclick = function (e) {
-                            e.preventDefault()
-
-                            const id = this.dataset.id
-
-                            fetch(`${API_URL}/${id}`, {
-                                method: 'DELETE',
-                            }).then(response => {
-                                response.json().then(data => {
-                                    if (data.message === 'success') {
-                                        obterLista()
-                                        alert('Produto excluído com sucesso!')
-                                    } else {
-                                        alert('Erro ao excluir produto, tente novamente mais tarde.')
-                                    }
-                                })
-                            })
-                        }
-                    })
+                    adicionaEventoBotaoEditar()
+                    adicionaEventoBotaoExcluir()
                 })
             })
         }
@@ -112,6 +182,40 @@
                 })
             })
         }
+
+        // AO EDITAR UM PRODUTO
+        formEdit.onsubmit = function (e) {
+            e.preventDefault()
+
+            const id = document.forms['formEdit'].id.value
+            const name = document.forms['formEdit'].name.value
+            const brand = document.forms['formEdit'].brand.value
+            const price = document.forms['formEdit'].price.value
+
+            fetch(`${API_URL}/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name,
+                    brand,
+                    price,
+                })
+            }).then(response => {
+                response.json().then(data => {
+                    if (data.message === 'success') {
+                        formEdit.reset()
+                        edit.classList.add('hidden')
+                        obterLista()
+                        alert('Produto alterado com sucesso!')
+                    } else {
+                        alert('Erro ao editar produto, tente novamente mais tarde.')
+                    }
+                })
+            })
+        }
+
     </script>
 </body>
 
